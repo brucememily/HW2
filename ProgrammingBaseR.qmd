@@ -1,0 +1,180 @@
+---
+title: "Programming in Base R"
+format: html
+editor: visual
+---
+
+# Task 1: Basic Vector Practice
+
+We have data from a medical experiment on blood pressure among 20 individuals. We collected values prior to treatment and after treatment.
+
+```{r}
+Pre_Treatment <- c(130, 128, 116, 124, 133, 134, 118, 126, 114, 127, 141, 138, 128, 140, 137, 131, 120, 128, 139, 135)
+names(Pre_Treatment) <- paste("Subject", 1:20, sep = "_")
+```
+
+```{r}
+Post_Treatment <- c(114, 98, 113, 99, 107, 116, 113, 111, 119, 117, 101, 119, 130, 122, 106, 106, 124, 102, 117, 113)
+names(Post_Treatment)<- paste("Subject", 1:20, sep = "_")
+```
+
+Calculate the change in blood pressure for each individual. What is the average change in blood pressure accross all 20 individuals?
+
+```{r}
+Change_in_BP <- Pre_Treatment - Post_Treatment
+mean(Change_in_BP)
+```
+
+Which individuals experienced a decrease in blood pressure?
+
+```{r}
+which(Change_in_BP>0)
+```
+
+Subset the vector of differences to return those only with a positive change.
+
+```{r}
+Change_in_BP[c(1:8,10:12,14:16,18:20)]
+```
+
+Calculate the average decrease in blood pressure for those with a positive change.
+
+```{r}
+Positive_BP <- Change_in_BP[c(1:8,10:12,14:16,18:20)]
+mean(Positive_BP)
+```
+
+# Task 2: Basic Data Frame Practice
+
+Create a data frame corresponding to the above data.
+
+```{r}
+BP_Data_Frame <- data.frame(Pre_Treatment,Post_Treatment,Change_in_BP)
+Positive_BP_Data_Frame <- BP_Data_Frame[BP_Data_Frame$Change_in_BP > 0 , ]
+```
+
+Add a new column to the data frame stating TRUE if the post treatment blood pressure is less than 120.
+
+```{r}
+Positive_BP_Data_Frame$Post_Treatment_Less_Than_120 <- Positive_BP_Data_Frame$Post_Treatment < 120
+```
+
+```{r}
+knitr::kable(Positive_BP_Data_Frame)
+```
+
+# Task 3: List Practice
+
+We now have data from another experiment where the treatment was actually a placebo. We have pre and post-treatment values for a different set of 10 individuals.
+
+Create a new data frame with this data similar to above.
+
+```{r}
+Placebo_Pre_Treatment <- c(138,135,147,117,152,134,114,121,131,130)
+  names(Placebo_Pre_Treatment) <- paste("Placebo",1:10,sep = "-")
+Placebo_Post_Treatment <- c(105, 136, 123, 130, 134, 143, 135, 139, 120, 124)
+  names(Placebo_Post_Treatment) <- paste("Placebo",1:10,sep = "-")
+Change_in_Placebo <- Placebo_Pre_Treatment - Placebo_Post_Treatment
+
+Placebo_Data_Frame <- data.frame(Placebo_Pre_Treatment,Placebo_Post_Treatment,Change_in_Placebo)
+
+Positive_Placebo_Data_Frame <-     Placebo_Data_Frame[Placebo_Data_Frame$Change_in_Placebo > 0 , ]
+Positive_Placebo_Data_Frame$Placebo_Post_Treatment_Less_Than_120 <- Positive_Placebo_Data_Frame$Placebo_Post_Treatment < 120
+
+knitr::kable(Positive_Placebo_Data_Frame)
+```
+
+Create and store list with treatment and placebo data frames.
+
+```{r}
+BP_List <- list(Positive_BP_Data_Frame, Positive_Placebo_Data_Frame)
+```
+
+Access the first list element using three different types of syntax.
+
+```{r}
+#First syntax
+BP_List[[1]]
+#Second syntax
+BP_List[[1]][1:2]
+#Third syntax
+str(BP_List[1])
+```
+
+Access placebo data frame, pre_bp column
+
+```{r}
+BP_List[[2]]$Placebo_Pre_Treatment
+```
+
+# Task 4: Control Flow Practice
+
+We want to characterize the post-treatment blood pressure as optimal (\<= 120), borderline (120 \< bp \<= 130), and high (\> 130).
+
+```{r}
+Placebo_Data_Frame$Optimal <- character(10)
+Placebo_Data_Frame$Borderline <- character(10)
+Placebo_Data_Frame$High <- character(10)
+
+for(i in seq_along(BP_List$Positive_Placebo_Data_Frame$Post_Treatment)) {
+  if(BP_List$Positive_Placebo_Data_Frame$Post_Treatment[i] <= 120) {
+    BP_List$Positive_Placebo_Data_Frame$Status[i] <- "Optimal"
+  } else if (BP_List$Positive_Placebo_Data_Frame$Post_Treatment[i] <= 130) {
+    BP_List$Positive_Placebo_Data_Frame$Status[i] <- "Borderline"
+  } else {
+    BP_List$Positive_Placebo_Data_Frame$Status[i] <- "High"
+  }
+}
+
+for(i in seq_along(BP_List$Positive_BP_Data_Frame$Post_Treatment)) {
+  if(BP_List$Positive_BP_Data_Frame$Post_Treatment[i] <= 120) {
+    BP_List$Positive_BP_Data_Frame$Status[i] <- "Optimal"
+  } else if (BP_List$Positive_BP_Data_Frame$Post_Treatment[i] <= 130) {
+    BP_List$Positive_BP_Data_Frame$Status[i] <- "Borderline"
+  } else {
+    BP_List$Positive_BP_Data_Frame$Status[i] <- "High"
+  }
+}
+```
+
+# Task 5: Function Writing
+
+Write the function:
+
+```{r}
+BP_Function <- function(BP_List, stat, i) {
+  #only want the first three columns
+  df <- BP_List[[i]][1:3]
+  #calculate the stat for each column
+  stat_values <- sapply(df, stat)
+  #create names dynamically based on stat passed
+  stat_names <- paste(stat, names(df), sep = "_")
+  #assign names to the vector
+  names(stat_values) <- stat_names
+  #return vector with names
+  return(stat_values)
+}
+```
+
+Apply the function:
+
+```{r}
+result_1 <- BP_Function(BP_List, "mean", 1)
+result_2 <- BP_Function(BP_List, "mean", 2)
+#print results
+result_1
+result_2
+```
+
+```{r}
+#Treatment data frame
+BP_Function(BP_List, "var", 1)
+BP_Function(BP_List, "sd", 1)
+BP_Function(BP_List, "min", 1)
+BP_Function(BP_List, "max", 1)
+#Placebo data frame
+BP_Function(BP_List, "var", 2)
+BP_Function(BP_List, "sd", 2)
+BP_Function(BP_List, "min", 2)
+BP_Function(BP_List, "max", 2)
+```
